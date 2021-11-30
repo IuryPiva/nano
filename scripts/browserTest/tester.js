@@ -37,6 +37,7 @@ class Tester {
             tester === null || tester === void 0 ? void 0 : tester.appendChild(title);
             tester === null || tester === void 0 ? void 0 : tester.appendChild(ul);
             this._description = description;
+            this.sendToPuppeteer(`• ${description}`);
             await fnc();
         }
         this.end();
@@ -125,10 +126,8 @@ class Tester {
                 return unsafe;
             };
             const replacer = (color) => (match, p1, p2, p3, offset, string) => {
-                console.log('match', match);
                 return `<span style="color:${color};">${escapeHtml(p2)}</span>`;
             };
-            console.log('msg', msg);
             // convert colors
             li.innerHTML = msg
                 .replace(/\r\n|\n|\r/gm, '')
