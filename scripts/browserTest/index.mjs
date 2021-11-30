@@ -41,7 +41,7 @@ const main = async fileName => {
     return window.__coverage__
   })
 
-  if (coverage) {
+  if (coverage && collectCoverage) {
     const fileName = crypto.createHash('md5').update(JSON.stringify(coverage)).digest('hex')
     await writeFile(resolve(`./.nyc_output/${fileName}.json`), JSON.stringify(coverage))
   }
