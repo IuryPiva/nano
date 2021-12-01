@@ -6,41 +6,63 @@ class Tester {
         this.sendId = 0;
         this.stats = { error: 0, warn: 0, success: 0 };
         this.tests = [];
-        // const style = document.createElement('style')
-        // style.innerText = 'body { color: #f8f8f2; background: #0c0e14; }'
-        // document.head.appendChild(style)
+        window.addEventListener('DOMContentLoaded', () => {
+            const tester = document.createElement('div');
+            tester.id = 'tester';
+            tester.style.padding = '4% 10%';
+            tester.style.position = 'absolute';
+            tester.style.top = '0';
+            tester.style.left = '0';
+            tester.style.background = '#161925';
+            tester.style.width = '100%';
+            tester.style.height = '100%';
+            tester.style.boxSizing = 'border-box';
+            document.body.appendChild(tester);
+            const testerHud = this.createElement('div', null, this.createElement('div', 'passes'), this.createElement('div', 'failures'), this.createElement('div', 'duration'));
+            testerHud.id = 'tester-hud';
+            testerHud.style.position = 'fixed';
+            testerHud.style.top = '24px';
+            testerHud.style.right = '24px';
+            document.body.appendChild(testerHud);
+            const style = document.createElement('style');
+            style.innerText = `
+        #tester { 
+          color: #F8F8F2;
+          background: #0c0e14;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #tester-hud {
+          color: #F8F8F2;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;     
+        }
+      `.replace(/\r\n|\n|\r/gm, '');
+            document.head.appendChild(style);
+        });
     }
     end() {
         const total = this.stats.error + this.stats.warn + this.stats.success;
         const success = this.stats.success;
         const passing = this.clr.lightGreen(`${success}/${total} passing`);
         setTimeout(() => {
-            this.sendToPuppeteer(`\n${this.indent}${passing}\n`);
-            const done = document.createElement('div');
-            done.innerText = 'done';
-            done.id = 'done';
-            document.body.appendChild(done);
+            this.sendToPuppeteer(`\n${this.indent}${passing}\n`, 'end');
         }, 100);
     }
-    async start() {
-        for (let i = 0; i < this.tests.length; i++) {
-            const { description, fnc } = this.tests[i];
-            // TODO(yandeu): check indent first
-            const tester = this.testerDocument;
-            const title = document.createElement('h3');
-            title.innerText = description;
-            title.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-            title.style.fontWeight = '300';
-            const ul = document.createElement('ul');
-            ul.style.listStyle = 'none';
-            ul.style.paddingLeft = '20px';
-            tester === null || tester === void 0 ? void 0 : tester.appendChild(title);
-            tester === null || tester === void 0 ? void 0 : tester.appendChild(ul);
-            this._description = description;
-            this.sendToPuppeteer(`• ${description}`);
-            await fnc();
-        }
-        this.end();
+    start() {
+        window.addEventListener('load', async () => {
+            for (let i = 0; i < this.tests.length; i++) {
+                const { description, fnc } = this.tests[i];
+                // TODO(yandeu): check indent first
+                const tester = this.testerDocument;
+                this.sendToPuppeteer(`• ${description}`);
+                const ul = this.createElement('ul');
+                ul.style.listStyle = 'none';
+                ul.style.paddingLeft = '20px';
+                tester === null || tester === void 0 ? void 0 : tester.appendChild(ul);
+                this._description = description;
+                await fnc();
+            }
+            this.end();
+        });
     }
     describe(description, fnc) {
         this.tests.push({ description, fnc });
@@ -91,53 +113,62 @@ class Tester {
         this.sendToPuppeteer(`\n${this.indent}${error}\n${this._description ? description : ''}`);
     }
     get testerDocument() {
-        const tester = document.getElementById('tester');
-        tester.style.padding = '4% 10%';
-        tester.style.position = 'absolute';
-        tester.style.top = '0';
-        tester.style.left = '0';
-        tester.style.background = '#f8f8f2aa';
-        tester.style.width = '100%';
-        tester.style.height = '100%';
-        tester.style.boxSizing = 'border-box';
-        return tester;
+        return document.getElementById('tester');
     }
-    sendToPuppeteer(msg) {
+    createElement(tag, innerHTML, ...children) {
+        const el = document.createElement(tag);
+        if (innerHTML)
+            el.innerHTML = innerHTML;
+        if (children)
+            children.forEach(c => {
+                el.appendChild(c);
+            });
+        return el;
+    }
+    /** Turns ascii colors to <span /> with color styles. */
+    colorify(text) {
+        const escapeHtml = (unsafe) => {
+            if (unsafe && typeof unsafe === 'string')
+                return unsafe
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&apos;');
+            return unsafe;
+        };
+        const replacer = (color) => (match, p1, p2, p3, offset, string) => {
+            return `<span style="color:${color};">${escapeHtml(p2)}</span>`;
+        };
+        // convert colors
+        return (text
+            .replace(/\r\n|\n|\r/gm, '')
+            // eslint-disable-next-line no-control-regex
+            .replace(/\x1b/g, '')
+            .replace(/(\[32;1m)(.*?)(\[0m)/gm, replacer('#50FA7B'))
+            .replace(/(\[31m)(.*?)(\[0m)/gm, replacer('#FF5555'))
+            .replace(/(\[32m)(.*?)(\[0m)/gm, replacer('#2FD651'))
+            .replace(/(\[90m)(.*?)(\[0m)/gm, replacer('#656B84')));
+    }
+    sendToPuppeteer(msg, type) {
         // add to dom
         const tester = this.testerDocument;
         if (tester) {
-            const ul = tester.lastChild;
-            const li = document.createElement('li');
-            /*
-            // remove colors
-            p.innerText = msg
-              // eslint-disable-next-line no-control-regex
-              .replace(/[\x30-\x32]|\x1b/g, '')
-              .replace(/\[\d?;?m/gm, '')
-              */
-            const escapeHtml = (unsafe) => {
-                if (unsafe && typeof unsafe === 'string')
-                    return unsafe
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&apos;');
-                return unsafe;
-            };
-            const replacer = (color) => (match, p1, p2, p3, offset, string) => {
-                return `<span style="color:${color};">${escapeHtml(p2)}</span>`;
-            };
-            // convert colors
-            li.innerHTML = msg
-                .replace(/\r\n|\n|\r/gm, '')
-                // eslint-disable-next-line no-control-regex
-                .replace(/\x1b/g, '')
-                .replace(/(\[32;1m)(.*?)(\[0m)/gm, replacer('lightgreen'))
-                .replace(/(\[31m)(.*?)(\[0m)/gm, replacer('red'))
-                .replace(/(\[32m)(.*?)(\[0m)/gm, replacer('green'))
-                .replace(/(\[90m)(.*?)(\[0m)/gm, replacer('gray '));
-            ul.appendChild(li);
+            if (type === 'end') {
+                const p = this.createElement('p', this.colorify(msg));
+                tester.appendChild(p);
+            }
+            else if (msg.startsWith('• ')) {
+                const title = this.createElement('h3', msg.slice(2));
+                title.style.fontWeight = '300';
+                tester.appendChild(title);
+            }
+            else {
+                const ul = tester.lastChild;
+                const li = this.createElement('li');
+                li.innerHTML = this.colorify(msg);
+                ul.appendChild(li);
+            }
         }
         if (!this._isAutomated) {
             console.log(msg.replace(/;1/, ''));
