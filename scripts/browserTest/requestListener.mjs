@@ -18,7 +18,7 @@ const sendMessages = () => {
       a.id - b.id
     })
     .forEach(m => {
-      console.log(m.text)
+      console.log(`  ${m.text}`)
     })
 
   _messages = []

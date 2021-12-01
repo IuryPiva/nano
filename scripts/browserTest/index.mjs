@@ -16,7 +16,8 @@ server.closeAsync = () => new Promise(resolve => server.close(() => resolve()))
 const browser = await puppeteer.launch()
 
 const main = async fileName => {
-  console.log(`\u001b[90m> ${fileName}\u001b[39m\n`)
+  // console.log(`\u001b[90m> ${fileName}\u001b[39m\n`) // gray
+  console.log(`> ${fileName}\n`) // white
 
   const page = await browser.newPage()
 

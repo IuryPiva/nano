@@ -1,5 +1,6 @@
 /* eslint-disable no-dupe-class-members */
 class Tester {
+  // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/webdriver
   _isAutomated = window.navigator.webdriver
 
   sendId = 0
@@ -8,6 +9,8 @@ class Tester {
   tests: { description: string; fnc: Function }[] = []
 
   constructor() {
+    if (this._isAutomated) return
+
     window.addEventListener('DOMContentLoaded', () => {
       const tester = document.createElement('div')
       tester.id = 'tester'
@@ -17,7 +20,7 @@ class Tester {
       tester.style.left = '0'
       tester.style.background = '#161925'
       tester.style.width = '100%'
-      tester.style.height = '100%'
+      tester.style.minHeight = '100%'
       tester.style.boxSizing = 'border-box'
       document.body.appendChild(tester)
 
@@ -36,14 +39,26 @@ class Tester {
       document.body.appendChild(testerHud)
 
       const style = document.createElement('style')
-      style.innerText = `
+      style.innerText = `    
         #tester { 
           color: #F8F8F2;
           background: #0c0e14;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        #tester ul li.error {
+          display: flex;
+          flex-direction: column;
+          margin-top: 8px;
+          margin-bottom: 8px;
+        }
+        #tester ul li.error span:not(:first-child) {
+          margin-left: 18px;
         }
         #tester-hud {
           color: #F8F8F2;
+          font-weight: 300;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;     
         }
       `.replace(/\r\n|\n|\r/gm, '')
@@ -58,8 +73,9 @@ class Tester {
     const passing = this.clr.lightGreen(`${success}/${total} passing`)
 
     setTimeout(() => {
-      this.sendToPuppeteer(`\n${this.indent}${passing}\n`, 'end')
+      this.sendToServer(`\n${this.indent}${passing}\n`, 'end')
 
+      // puppeteer waits for #done
       const done = this.createElement('div', 'done')
       done.id = 'done'
       document.body.appendChild(done)
@@ -67,19 +83,20 @@ class Tester {
   }
 
   start() {
+    // TODO(yandeu): check indent for nested describe()
+
     window.addEventListener('load', async () => {
       for (let i = 0; i < this.tests.length; i++) {
         const { description, fnc } = this.tests[i]
 
-        // TODO(yandeu): check indent first
-        const tester = this.testerDocument
+        this.sendToServer(`\n• ${description}`)
 
-        this.sendToPuppeteer(`• ${description}`)
-
-        const ul = this.createElement('ul')
-        ul.style.listStyle = 'none'
-        ul.style.paddingLeft = '20px'
-        tester?.appendChild(ul)
+        if (!this._isAutomated) {
+          const ul = this.createElement('ul')
+          ul.style.listStyle = 'none'
+          ul.style.paddingLeft = '20px'
+          this.testerDocument?.appendChild(ul)
+        }
 
         this._description = description
 
@@ -101,13 +118,13 @@ class Tester {
     })
   }
 
-  error(assertion, message = '-') {
+  error(assertion, message, comment = '') {
     if (assertion === true) {
       this.stats.success++
       this.sendSuccess(message)
     } else {
       this.stats.error++
-      this.sendError(message, assertion)
+      this.sendError(message, comment)
     }
   }
 
@@ -136,13 +153,13 @@ class Tester {
   sendSuccess(msg, assertion?) {
     const symbol = this.clr.lightGreen(this.sym.pass)
     const message = this.clr.gray(msg)
-    this.sendToPuppeteer(`${this.indent}${symbol} ${message}`)
+    this.sendToServer(`${this.indent}${symbol} ${message}`)
   }
 
-  sendError(msg, assertion) {
+  sendError(msg, comment) {
     const error = this.clr.red(`${this.sym.fail} ${msg}`)
-    const description = this.clr.gray(`${this.indent}${this.indent}${this._description || ''}\n`)
-    this.sendToPuppeteer(`\n${this.indent}${error}\n${this._description ? description : ''}`)
+    const _comment = comment ? this.clr.gray(`\n${this.indent}  ${comment}`) : ''
+    this.sendToServer(`${this.indent}${error}${_comment}`, 'error')
   }
 
   get testerDocument() {
@@ -159,21 +176,29 @@ class Tester {
     return el
   }
 
-  /** Turns ascii colors to <span /> with color styles. */
-  colorify(text: string) {
-    const escapeHtml = (unsafe: string) => {
-      if (unsafe && typeof unsafe === 'string')
-        return unsafe
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&apos;')
+  escapeHtml(unsafe: string) {
+    if (unsafe && typeof unsafe === 'string')
       return unsafe
-    }
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+    return unsafe
+  }
 
+  removeLineBreaks(str: string) {
+    return str.replace(/\r\n|\r|\n/gm, '')
+  }
+
+  /**
+   * Turns ascii colors to <span /> with color styles.
+   * Replaces new lines.
+   * Escapes HTML.
+   */
+  colorify(text: string) {
     const replacer = (color: string) => (match, p1, p2, p3, offset, string) => {
-      return `<span style="color:${color};">${escapeHtml(p2)}</span>`
+      return `<span style="color:${color};">${this.escapeHtml(p2)}</span>`
     }
 
     // convert colors
@@ -189,25 +214,32 @@ class Tester {
     )
   }
 
-  sendToPuppeteer(msg: string, type?: string) {
-    // add to dom
+  sendToServer(msg: string, type?: string) {
     const tester = this.testerDocument
-    if (tester) {
+
+    // add to dom
+    if (!this._isAutomated && tester) {
+      const _msg = this.removeLineBreaks(msg)
       if (type === 'end') {
-        const p = this.createElement('p', this.colorify(msg))
+        const p = this.createElement('p', this.colorify(_msg))
         tester.appendChild(p)
-      } else if (msg.startsWith('• ')) {
-        const title = this.createElement('h3', msg.slice(2))
+      } else if (_msg.startsWith('• ')) {
+        const title = this.createElement('h3', _msg.slice(2))
         title.style.fontWeight = '300'
         tester.appendChild(title)
       } else {
         const ul = tester.lastChild as HTMLElement
         const li = this.createElement('li')
-        li.innerHTML = this.colorify(msg)
+        li.innerHTML = this.colorify(_msg)
+        if (type === 'error') li.classList.add('error')
         ul.appendChild(li)
       }
     }
+
+    // scroll and print to console
+    // (light colors are not supported on the browser console, therefore we replace all light colors (;1) with its normal)
     if (!this._isAutomated) {
+      window.scrollTo({ top: tester.scrollHeight, behavior: 'smooth' })
       console.log(msg.replace(/;1/, ''))
       return
     }
@@ -236,7 +268,7 @@ class Tester {
       const should = not ? 'should NOT be' : 'should be'
 
       if (isTrue && message) this[type](isTrue, message)
-      else if (message) this[type](isTrue, `${message}: (${should} "${expectation}", got "${assertion}")`)
+      else if (message) this[type](isTrue, message, `${should} "${expectation}", got "${assertion}"`)
       else this[type](isTrue, `${should} "${expectation}", got "${assertion}"`)
     }
 
@@ -262,9 +294,12 @@ setTimeout(() => {
   describe('my first test', async () => {
     expect(typeof 'hello').toBe('string', 'some message')
     expect(typeof 'hello').toBe('string')
-    await Test.wait(2000)
-    expect(99 - 8).toBe(72)
+    await Test.wait(500)
     expect(99 - 8).not.toBe(72)
     expect(99 - 8).not.toBe(91)
+    expect(99 - 8).toBe(72)
+    expect(99 - 8).toBe(72, '99 minus 8 should be 72')
+    expect(typeof 'hello').toBe('string', 'some message')
+    expect(typeof 'hello').toBe('string')
   })
 })
