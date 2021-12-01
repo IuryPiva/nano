@@ -63,7 +63,7 @@ class Tester {
         }
       `.replace(/\r\n|\n|\r/gm, '')
 
-      document.head.appendChild(style)
+      document.body.appendChild(style)
     })
   }
 
@@ -249,7 +249,7 @@ class Tester {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ text: msg, id: this.sendId++ })
+      body: JSON.stringify({ text: msg, id: this.sendId++, type })
     })
   }
 
@@ -283,23 +283,19 @@ class Tester {
 }
 
 const Test = new Tester()
-//@ts-ignore
 const expect = Test.expect.bind(Test)
-//@ts-ignore
 const describe = Test.describe.bind(Test)
-//@ts-ignore
-const description = Test.describe.bind(Test)
 
-setTimeout(() => {
-  describe('my first test', async () => {
-    expect(typeof 'hello').toBe('string', 'some message')
-    expect(typeof 'hello').toBe('string')
-    await Test.wait(500)
-    expect(99 - 8).not.toBe(72)
-    expect(99 - 8).not.toBe(91)
-    expect(99 - 8).toBe(72)
-    expect(99 - 8).toBe(72, '99 minus 8 should be 72')
-    expect(typeof 'hello').toBe('string', 'some message')
-    expect(typeof 'hello').toBe('string')
-  })
-})
+// setTimeout(() => {
+//   describe('my first test', async () => {
+//     expect(typeof 'hello').toBe('string', 'some message')
+//     expect(typeof 'hello').toBe('string')
+//     await Test.wait(500)
+//     expect(99 - 8).not.toBe(72)
+//     expect(99 - 8).not.toBe(91)
+//     expect(99 - 8).toBe(72)
+//     expect(99 - 8).toBe(72, '99 minus 8 should be 72')
+//     expect(typeof 'hello').toBe('string', 'some message')
+//     expect(typeof 'hello').toBe('string')
+//   })
+// })

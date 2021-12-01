@@ -6,7 +6,8 @@
     "noImplicitAny": false,
 
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": []
   },
   "include": ["./**/*.ts"]
 }

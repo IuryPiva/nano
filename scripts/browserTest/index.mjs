@@ -6,6 +6,7 @@ import { join, resolve } from 'path'
 import { mkdir, readdir, writeFile } from 'fs/promises'
 import { requestListener } from './requestListener.mjs'
 import { NYC } from './nyc.mjs'
+import { totalPasses } from './requestListener.mjs'
 
 const args = process.argv.splice(2)
 const collectCoverage = args.includes('--coverage')
@@ -17,7 +18,7 @@ const browser = await puppeteer.launch()
 
 const main = async fileName => {
   // console.log(`\u001b[90m> ${fileName}\u001b[39m\n`) // gray
-  console.log(`> ${fileName}\n`) // white
+  console.log(`> ${fileName}`) // white
 
   const page = await browser.newPage()
 
@@ -64,6 +65,10 @@ server.listen(8080, async () => {
   for (let i = 0; i < files.length; i++) {
     await main(`${DIR}/${files[i]}`)
   }
+
+  console.log(`TOTAL: ${totalPasses[0]}/${totalPasses[1]} passes`)
+  console.log('\n')
+  console.log('\n')
 
   if (collectCoverage) NYC.report()
 
