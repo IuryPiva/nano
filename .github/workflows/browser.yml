@@ -30,5 +30,6 @@ jobs:
         run: |
           node_modules/.bin/rimraf .nyc_output coverage
           node_modules/.bin/webpack -c webpack/webpack.bundle.instrumented.js
+          node_module/.bin/tsc -p scripts/browserTest/tsconfig.json
           node scripts/browserTest/index.mjs --coverage
           node_modules/.bin/nyc report --reporter=html --reporter=lcov
