@@ -59,6 +59,10 @@ class Tester {
 
     setTimeout(() => {
       this.sendToPuppeteer(`\n${this.indent}${passing}\n`, 'end')
+
+      const done = this.createElement('div', 'done')
+      done.id = 'done'
+      document.body.appendChild(done)
     }, 100)
   }
 
