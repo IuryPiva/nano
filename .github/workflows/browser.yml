@@ -41,5 +41,4 @@ jobs:
           node_modules/.bin/nyc report --exclude "src/{bundles,htm,ui}/**" --reporter=text --reporter=html --reporter=lcov
 
       - name: Upload coverage to Codecov
-        if: ${{ github.ref == 'refs/heads/master' }}
         uses: codecov/codecov-action@v2
