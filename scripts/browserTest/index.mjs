@@ -66,7 +66,6 @@ server.listen(8080, async () => {
     await main(`${DIR}/${files[i]}`)
   }
 
-  console.log('\n')
   console.log(`TOTAL: ${totalPasses[0]}/${totalPasses[1]} passes`)
   console.log('\n')
 
