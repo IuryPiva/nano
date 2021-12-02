@@ -38,7 +38,7 @@ jobs:
 
       - name: Coverage
         run: |
-          node_modules/.bin/nyc report --exclude "src/{bundles,htm,ui}/**" --reporter=text --reporter=html --reporter=lcov
+          node_modules/.bin/nyc report --exclude "src/{bundles,dev,htm,ui}/**" --exclude "src/mod.ts" --reporter=text --reporter=html --reporter=lcov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
