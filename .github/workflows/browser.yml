@@ -30,7 +30,7 @@ jobs:
         if: github.ref == refs/heads/main
         run: echo "Run!"
 
-      - name: Test
+      - name: Teste
         if: github.ref == refs/heads/improve-browser-test
         run: echo "Run!"
 
