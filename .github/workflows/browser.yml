@@ -27,11 +27,11 @@ jobs:
           npm i -D webpack webpack-cli ts-loader nyc coverage-istanbul-loader
 
       - name: Deploy
-        if: github.ref == "refs/heads/main"
+        if: ${{ github.ref == 'refs/heads/improve-browser-test' }}
         run: echo "Run!"
 
       - name: Teste
-        if: github.ref == "refs/heads/improve-browser-test"
+        if: ${{ github.ref == 'refs/heads/master' }}
         run: echo "Run!"
 
       - name: Prepare
