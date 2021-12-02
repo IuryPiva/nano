@@ -49,4 +49,5 @@ jobs:
         run: npm test
 
       - name: Upload coverage to Codecov
+        if: ${{ github.ref == 'refs/heads/master' }}
         uses: codecov/codecov-action@v2
