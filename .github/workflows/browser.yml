@@ -26,10 +26,16 @@ jobs:
           npm i -D rimraf typescript puppeteer
           npm i -D webpack webpack-cli ts-loader nyc coverage-istanbul-loader
 
-      - name: Test
+      - name: Prepare
         run: |
           node_modules/.bin/rimraf .nyc_output coverage
           node_modules/.bin/webpack -c webpack/webpack.bundle.instrumented.js
           node_modules/.bin/tsc -p scripts/browserTest/tsconfig.json
+
+      - name: Test
+        run: |
           node scripts/browserTest/index.mjs --coverage
-          node_modules/.bin/nyc report --reporter=html --reporter=lcov
+
+      - name: Coverage
+        run: |
+          node_modules/.bin/nyc report --reporter=text --reporter=html --reporter=lcov

@@ -66,11 +66,12 @@ server.listen(8080, async () => {
     await main(`${DIR}/${files[i]}`)
   }
 
+  console.log('\n')
   console.log(`TOTAL: ${totalPasses[0]}/${totalPasses[1]} passes`)
   console.log('\n')
-  console.log('\n')
 
-  if (collectCoverage) NYC.report()
+  // don't print the report automatically
+  // if (collectCoverage) NYC.report()
 
   await browser.close()
   await server.closeAsync()
