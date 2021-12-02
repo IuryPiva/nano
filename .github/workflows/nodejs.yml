@@ -1,0 +1,53 @@
+# syntax: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions
+name: NodeJS
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+      - 'bundles/**'
+      - 'dev/**'
+      - 'readme/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.vscode/**'
+      - 'bundles/**'
+      - 'dev/**'
+      - 'readme/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 17.x]
+
+    name: Node ${{ matrix.node-version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Packages
+        run: npm run build
+
+      - name: Bundle Package
+        run: npm run bundle
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Upload coverage to Codecov
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: codecov/codecov-action@v2
