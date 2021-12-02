@@ -26,6 +26,19 @@ jobs:
           npm i -D rimraf typescript puppeteer
           npm i -D webpack webpack-cli ts-loader nyc coverage-istanbul-loader
 
+      - name: Determine default branch
+        run: |
+          DEFAULT_BRANCH=$(git remote show origin | awk '/HEAD branch/ {print $NF}')
+          echo "default_branch=$DEFAULT_BRANCH" >> $GITHUB_ENV
+          echo "default_branch_ref=refs/heads/$DEFAULT_BRANCH" >> $GITHUB_ENV
+
+      - name: Debug
+        run: echo ${{ env.default_branch }}
+
+      - name: Deploy
+        if: github.ref == env.default_branch_ref
+        run: echo "Run!"
+
       - name: Prepare
         run: |
           node_modules/.bin/rimraf .nyc_output coverage
